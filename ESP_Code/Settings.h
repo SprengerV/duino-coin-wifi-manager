@@ -8,12 +8,12 @@ extern const char DUCO_USER[] = "my_cool_username";
 // Change the part in brackets to your mining key (if you have set it in the wallet)
 extern const char MINER_KEY[] = "mySecretPass";
 // Change the part in brackets if you want to set a custom miner name
-// Use Auto to autogenerate, None for no custom identifier
-extern const char RIG_IDENTIFIER[] = "None";
+// Increment by 1 for each ESP
+extern const char RIG_IDENTIFIER[] = "ESP_00";
 // Change the part in brackets to your WiFi name
-extern const char SSID[] = "SSID";
+//extern const char SSID[] = "SSID";
 // Change the part in brackets to your WiFi password
-extern const char PASSWORD[] = "PASSW0RD";
+//extern const char PASSWORD[] = "PASSW0RD";
 
 // Uncomment if you want to host the dashboard page (available on ESPs IP address)
 // #define WEB_DASHBOARD
