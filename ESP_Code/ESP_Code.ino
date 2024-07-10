@@ -79,9 +79,9 @@
 
 namespace {
     MiningConfig *configuration = new MiningConfig(
-        DUCO_USER,
+        DUCO_USER = undefined,
         RIG_IDENTIFIER,
-        MINER_KEY
+        MINER_KEY = undefined
     );
 
     #if defined(ESP32) && CORE == 2
@@ -216,6 +216,7 @@ namespace {
           Serial.println();
         #endif
       #else
+        
         #if defined(SERIAL_PRINTING)
           Serial.println("Connecting to WiFi...");
         #endif
@@ -226,14 +227,98 @@ namespace {
             WiFi.setSleep(false);
         #endif
 
+        #if defined(SERIAL_PRINTING)
+          Serial.println("Mounting file system...");
+        #endif
+
+        if (SPIFFS.begin()) {
+          #if defined(SERIAL_PRINTING)
+            Serial.println("File system mounted!");
+          #endif
+          if (SPIFFS.exists("/config.json")) {
+            #if defined(SERIAL_PRINTING)
+              Serial.println("Reading config file...");
+            #endif
+            File cf = SPIFFS.open("/config.json", "r");
+            if (cf) {
+              #if defined(SERIAL_PRINTING)
+                Serial.println("Opened config file!");
+              #endif
+              size_t sz = cf.size();
+              // Allocate a buffer to store contents of config.json
+              std::unique_ptr<char[]> buf(new char[sz]);
+
+              cf.readBytes(buf.get(), sz);
+              DynamicJsonBuffer jBuff;
+              JsonObject& json - jBuff.parseObject(buf.get());
+              json.printTo(Serial);
+              if (json.success()) {
+                #if defined(SERIAL PRINTING)
+                  Serial.println("\nParsed JSON!");
+                #endif
+                strcpy(DUCO_USER, json["DUCO_USER"]);
+                configuration->DUCO_USER = DUCO_USER;
+                strcpy(MINER_KEY, json["MINER_KEY"]);
+                configuration->MINER_KEY = MINER_KEY;
+              }
+              else {
+                #if defined(SERIAL_PRINTING)
+                  Serial.println("Failed to load JSON!");
+                #endif
+              }
+            }
+          }
+        }
+        else {
+          #if defined(SERIAL_PRINTING)
+            Serial.println("Failed to mount file system!")
+        }
+
+        WiFiManagerParameter duco_user("DUCO User", "DUCO User", DUCO_USER, 24);
+        WiFiManagerParameter miner_key("Miner Key", "Miner Key", MINER_KEY, 24);
+
         WiFiManager wm; // WiFiManager local initialization
         // Uncomment to wipe stored credentials for testing
         // wm.resetSettings(); 
         
+        wm.setSaveConfigCallBack(saveConfigCallback);
+        // Set custom IP for web portal
+        wm.setAPConfig(IPAddress(10,0,0,1), IPAddress(10,0,0,1), IPAddress(255,255,255,0));
+        // Set a timeout for connection
+        wm.setTimeout(120);
+        // Add custom parameters
+        wm.addParameter(&duco_user);
+        wm.addParameter(&miner_key);
+
         bool res;
-        
         res = wm.autoConnect(RIG_IDENTIFIER);
 
+        strcpy(DUCO_USER, duco_user.getValue());
+        strcpy(MINER_KEY, miner_key.getValue());
+
+        if (shouldSave) {
+          #if defined(SERIAL_PRINTING)
+            Serial.println("Saving config...");
+          #endif
+          DynamicJsonBuffer jBuff;
+          JsonObject& json - jBuff.createObject();
+          json["DUCO_USER"] = duco_user;
+          json["MINER_KEY"] = miner_key;
+
+          File configFile = SPIFFS.open("/config.json", "w");
+          if (!configFile) {
+            #if defined(SERIAL_PRINTING)
+              Serial.println("Failed to open config file for writing");
+            #endif
+          }
+
+          #if defined(SERIAL_PRINTING)
+            json.printTo(Serial);
+          #endif
+          json.printTo(configFile);
+          configFile.close();
+        }
+        
         if (!res) {
           #if defined(SERIAL_PRINTING)
             Serial.println("Failed to connect");
