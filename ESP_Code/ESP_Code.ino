@@ -215,7 +215,6 @@ namespace {
           Serial.println("Rig name: " + String(RIG_IDENTIFIER));
           Serial.println();
         #endif
-
       #else
         #if defined(SERIAL_PRINTING)
           Serial.println("Connecting to: " + String(SSID));
@@ -233,7 +232,7 @@ namespace {
         
         bool res;
         
-        res = wm.autoconnect(AP_NAME)
+        res = wm.autoconnect(RIG_IDENTIFIER);
 
         if (!res) {
           #if defined(SERIAL_PRINTING)
