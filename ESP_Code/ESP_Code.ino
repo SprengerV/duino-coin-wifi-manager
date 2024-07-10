@@ -217,7 +217,7 @@ namespace {
         #endif
       #else
         #if defined(SERIAL_PRINTING)
-          Serial.println("Connecting to: " + String(SSID));
+          Serial.println("Connecting to WiFi...");
         #endif
         WiFi.mode(WIFI_STA); // Setup ESP in client mode
         #if defined(ESP8266)
@@ -232,11 +232,11 @@ namespace {
         
         bool res;
         
-        res = wm.autoconnect(RIG_IDENTIFIER);
+        res = wm.autoConnect(RIG_IDENTIFIER);
 
         if (!res) {
           #if defined(SERIAL_PRINTING)
-            Serial.println("Failed to connect")
+            Serial.println("Failed to connect");
           #endif  
           ESP.restart();
         }
