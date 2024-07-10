@@ -40,6 +40,7 @@
     #include <WebServer.h>
 #endif
 
+#include <WiFiManager.h> // https://github.com/tzapu/WifiManager
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <WiFiClient.h>
@@ -225,7 +226,30 @@ namespace {
         #else
             WiFi.setSleep(false);
         #endif
-        WiFi.begin(SSID, PASSWORD);
+        //WiFi.begin(SSID, PASSWORD);
+
+        WiFiManager wm; // WiFiManager local initialization
+        wm.resetSettings(); // Wipe stored credentials for testing
+        
+        bool res;
+        
+        res = wm.autoconnect(AP_NAME)
+
+        if (!res) {
+          #if defined(SERIAL_PRINTING)
+            Serial.println("Failed to connect")
+          #endif  
+          ESP.restart();
+        }
+        else {
+          // If you're here you've connected to the WiFi
+          #if defined(SERIAL_PRINTING)
+            Serial.println("\n\nSuccessfully connected to WiFi");
+            Serial.println("Local IP address: " + WiFi.localIP().toString());
+            Serial.println("Rig name: " + String(RIG_IDENTIFIER));
+            Serial.println();
+          #endif
+        }
 
         int wait_passes = 0;
         while (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -234,17 +258,11 @@ namespace {
               Serial.print(".");
             #endif
             if (++wait_passes >= 10) {
-                WiFi.begin(SSID, PASSWORD);
+                //WiFi.begin(SSID, PASSWORD);
+                ESP.restart();
                 wait_passes = 0;
             }
         }
-
-        #if defined(SERIAL_PRINTING)
-          Serial.println("\n\nSuccessfully connected to WiFi");
-          Serial.println("Local IP address: " + WiFi.localIP().toString());
-          Serial.println("Rig name: " + String(RIG_IDENTIFIER));
-          Serial.println();
-        #endif
 
       #endif
 
@@ -369,7 +387,7 @@ void task2_func(void *) {
     #endif
 }
 
-void setup() {
+void setup() {    
     delay(500);
     
     #if defined(SERIAL_PRINTING)
