@@ -3,11 +3,11 @@
 #define SETTINGS_H
 
 // ---------------------- General settings ---------------------- //
-// Change the part in brackets to your Duino-Coin username
+// Change the part in quotations to your Duino-Coin username
 // extern const char DUCO_USER[] = "my_cool_username";
-// Change the part in brackets to your mining key (if you have set it in the wallet)
+// Change the part in quotations to your mining key (if you have set it in the wallet)
 // extern const char MINER_KEY[] = "mySecretPass";
-// Change the part in brackets if you want to set a custom miner name
+// Change the part in quotations if you want to set a custom miner name
 extern const char RIG_IDENTIFIER[] = "ESP_00"; // Increment by 1 for each ESP
 
 // Uncomment if you want to host the dashboard page (available on ESPs IP address)
