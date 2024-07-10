@@ -225,10 +225,10 @@ namespace {
         #else
             WiFi.setSleep(false);
         #endif
-        //WiFi.begin(SSID, PASSWORD);
 
         WiFiManager wm; // WiFiManager local initialization
-        wm.resetSettings(); // Wipe stored credentials for testing
+        // Uncomment to wipe stored credentials for testing
+        // wm.resetSettings(); 
         
         bool res;
         
