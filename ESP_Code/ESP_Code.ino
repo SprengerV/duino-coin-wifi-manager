@@ -278,9 +278,12 @@ namespace {
               // JsonObject json = jBuff.as<JsonObject>();
 
               #if defined(SERIAL_PRINTING)
-                Serial.println(json);
+                // Uncomment for ArduinoJson 5
+                json.printTo(Serial);
+                // Uncomment for ArduinoJson 6
+                // Serial.println(json);
               #endif
-              
+
               // Uncomment for ArduinoJson 5
               if (json.success()) {
               // Uncomment for ArduinoJson 6
@@ -336,7 +339,8 @@ namespace {
           #endif
           
           // Uncomment for ArduinoJson 5
-          JsonObject& json;
+          DynamicJsonBuffer jBuff;
+          JsonObject& json = jBuff.createObject();
 
           // Uncomment for ArduinoJson 6 
           // JsonObject json;
