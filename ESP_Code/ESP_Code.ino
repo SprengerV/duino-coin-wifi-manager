@@ -345,8 +345,8 @@ namespace {
           // Uncomment for ArduinoJson 6 
           // JsonObject json;
 
-          json["DUCO_USER"] = duco_user;
-          json["MINER_KEY"] = miner_key;
+          json["DUCO_USER"] = DUCO_USER;
+          json["MINER_KEY"] = MINER_KEY;
 
           #if defined(SERIAL_PRINTING)
             // Uncomment for ArduinoJson 5
