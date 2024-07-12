@@ -333,7 +333,9 @@ namespace {
 
         strcpy(DUCO_USER, duco_user.getValue());
         strcpy(MINER_KEY, miner_key.getValue());
-
+        configuration->DUCO_USER = DUCO_USER;
+        configuration->MINER_KEY = MINER_KEY;
+        
         if (shouldSave) {
           #if defined(SERIAL_PRINTING)
             Serial.println("Saving config...");
@@ -348,8 +350,7 @@ namespace {
 
           json["DUCO_USER"] = DUCO_USER;
           json["MINER_KEY"] = MINER_KEY;
-          configuration->DUCO_USER = DUCO_USER;
-          configuration->MINER_KEY = MINER_KEY;
+
 
           #if defined(SERIAL_PRINTING)
             // Uncomment for ArduinoJson 5
