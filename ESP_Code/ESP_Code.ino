@@ -269,7 +269,8 @@ namespace {
               cf.readBytes(buf.get(), sz);
               
               // Uncomment for ArduinoJson 5
-              JsonObject& json = parseObject(buf.get());
+              DynamicJsonBuffer jBuff;
+              JsonObject& json = jBuff.parseObject(buf.get());
 
               // Uncomment for ArduinoJson 6
               // DynamicJsonDocument jBuff(sz);
@@ -279,7 +280,10 @@ namespace {
               #if defined(SERIAL_PRINTING)
                 Serial.println(json);
               #endif
-              if (!err) {
+              // Uncomment for ArduinoJson 5
+              if (json.success()) {
+              // Uncomment for ArduinoJson 6
+              // if (!err) {
                 #if defined(SERIAL_PRINTING)
                   Serial.println("\nParsed JSON!");
                 #endif
