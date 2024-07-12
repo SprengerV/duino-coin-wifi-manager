@@ -103,9 +103,13 @@ namespace {
     }
 
     void UpdateHostPort(String input) {
+        // Uncomment for ArduinoJson 5
+        JsonObject doc = parseObject(input);
+        
         // Thanks @ricaun for the code
-        DynamicJsonDocument doc(256);
-        deserializeJson(doc, input);
+        // Uncomment for ArduinoJson 6
+        // DynamicJsonDocument doc(256);
+        // deserializeJson(doc, input);
         const char *name = doc["name"];
 
         configuration->host = doc["ip"].as<String>().c_str();
