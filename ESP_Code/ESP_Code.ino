@@ -356,11 +356,13 @@ namespace {
             // Uncomment for ArduinoJson 6
             // Serial.println(json);
           #endif
+          
           // uncomment for ArduinoJson 5
           json.printTo(configFile);
 
           // Uncomment for ArduinoJson 6
           // serializeJson(json, configFile)
+          
           configFile.close();
         }
         
