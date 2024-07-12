@@ -282,7 +282,6 @@ namespace {
                   Serial.println("Failed to load JSON!");
                 #endif
               }
-              endif
             }
           }
         }
@@ -368,8 +367,6 @@ namespace {
                 wait_passes = 0;
             }
         }
-
-      #endif
 
         SelectNode();
     }
