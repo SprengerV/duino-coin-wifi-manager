@@ -262,9 +262,15 @@ namespace {
               std::unique_ptr<char[]> buf(new char[sz]);
 
               cf.readBytes(buf.get(), sz);
-              DynamicJsonDocument jBuff(sz);
-              DeserializationError err = deserializeJson(jBuff, buf.get());
-              JsonObject json = jBuff.as<JsonObject>();
+              
+              // Uncomment for ArduinoJson 5
+              JsonObject& json = parseObject(buf.get());
+
+              // Uncomment for ArduinoJson 6
+              // DynamicJsonDocument jBuff(sz);
+              // DeserializationError err = deserializeJson(jBuff, buf.get());
+              // JsonObject json = jBuff.as<JsonObject>();
+
               #if defined(SERIAL_PRINTING)
                 Serial.println(json);
               #endif
@@ -318,11 +324,22 @@ namespace {
           #if defined(SERIAL_PRINTING)
             Serial.println("Saving config...");
           #endif
-          JsonObject json;
+          
+          // Uncomment for ArduinoJson 5
+          JsonObject& json;
+
+          // Uncomment for ArduinoJson 6 
+          // JsonObject json;
+
           json["DUCO_USER"] = duco_user;
           json["MINER_KEY"] = miner_key;
+
           #if defined(SERIAL_PRINTING)
-            serializeJson(json, Serial);
+            // Uncomment for ArduinoJson 5
+            json.printTo(Serial);
+
+            // Uncomment for ArduinoJson 6
+            // serializeJson(json, Serial);
           #endif
 
           File configFile = SPIFFS.open("/config.json", "w");
@@ -333,9 +350,17 @@ namespace {
           }
 
           #if defined(SERIAL_PRINTING)
-            Serial.println(json);
+            // Uncomment for ArduinoJson 5
+            json.printTo(Serial);
+            
+            // Uncomment for ArduinoJson 6
+            // Serial.println(json);
           #endif
-          serializeJson(json, configFile)
+          // uncomment for ArduinoJson 5
+          json.printTo(configFile);
+
+          // Uncomment for ArduinoJson 6
+          // serializeJson(json, configFile)
           configFile.close();
         }
         
