@@ -280,6 +280,7 @@ namespace {
               #if defined(SERIAL_PRINTING)
                 Serial.println(json);
               #endif
+              
               // Uncomment for ArduinoJson 5
               if (json.success()) {
               // Uncomment for ArduinoJson 6
