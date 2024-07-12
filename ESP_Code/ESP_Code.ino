@@ -282,7 +282,7 @@ namespace {
                   Serial.println("Failed to load JSON!");
                 #endif
               }
-              #endif
+              endif
             }
           }
         }
