@@ -77,10 +77,11 @@
     WebServer server(80);
 #endif
 
-namespace {
-    char DUCO_USER[24];
-    char MINER_KEY[24];
+char DUCO_USER[24];
+char MINER_KEY[24];
+bool shouldSave = false;
 
+namespace {
     MiningConfig *configuration = new MiningConfig(
         DUCO_USER,
         RIG_IDENTIFIER,
@@ -310,22 +311,22 @@ namespace {
           #endif
         }
       #endif
-
-        WiFiManagerParameter duco_user("DUCO User", "DUCO User", DUCO_USER, 24);
-        WiFiManagerParameter miner_key("Miner Key", "Miner Key", MINER_KEY, 24);
-
-        WiFiManager wm; // WiFiManager local initialization
+        // WiFiManager local initialization
+        WiFiManager wm; 
         // Uncomment to wipe stored credentials for testing
         // wm.resetSettings(); 
+        
+        // Add custom parameters
+        WiFiManagerParameter duco_user("DUCO User", "DUCO User", DUCO_USER, 24);
+        WiFiManagerParameter miner_key("Miner Key", "Miner Key", MINER_KEY, 24);
+        wm.addParameter(&duco_user);
+        wm.addParameter(&miner_key);
         
         wm.setSaveConfigCallback(saveConfigCallback);
         // Set custom IP for web portal
         wm.setAPStaticIPConfig(IPAddress(10,0,0,1), IPAddress(10,0,0,1), IPAddress(255,255,255,0));
         // Set a timeout for connection
         wm.setTimeout(120);
-        // Add custom parameters
-        wm.addParameter(&duco_user);
-        wm.addParameter(&miner_key);
 
         bool res;
         res = wm.autoConnect(RIG_IDENTIFIER);
@@ -347,6 +348,8 @@ namespace {
 
           json["DUCO_USER"] = DUCO_USER;
           json["MINER_KEY"] = MINER_KEY;
+          configuration->DUCO_USER = DUCO_USER;
+          configuration->MINER_KEY = MINER_KEY;
 
           #if defined(SERIAL_PRINTING)
             // Uncomment for ArduinoJson 5
