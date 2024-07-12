@@ -302,7 +302,7 @@ namespace {
         
         wm.setSaveConfigCallback(saveConfigCallback);
         // Set custom IP for web portal
-        wm.setAPConfig(IPAddress(10,0,0,1), IPAddress(10,0,0,1), IPAddress(255,255,255,0));
+        wm.setAPStaticIPConfig(IPAddress(10,0,0,1), IPAddress(10,0,0,1), IPAddress(255,255,255,0));
         // Set a timeout for connection
         wm.setTimeout(120);
         // Add custom parameters
@@ -319,10 +319,12 @@ namespace {
           #if defined(SERIAL_PRINTING)
             Serial.println("Saving config...");
           #endif
-          DynamicJsonDocument jBuff;
-          JsonObject json = jBuff.createObject();
+          JsonObject json;
           json["DUCO_USER"] = duco_user;
           json["MINER_KEY"] = miner_key;
+          #if defined(SERIAL_PRINTING)
+            serializeJson(json, Serial);
+          #endif
 
           File configFile = SPIFFS.open("/config.json", "w");
           if (!configFile) {
@@ -332,9 +334,9 @@ namespace {
           }
 
           #if defined(SERIAL_PRINTING)
-            json.printTo(Serial);
+            Serial.println(json);
           #endif
-          json.printTo(configFile);
+          serializeJson(json, configFile)
           configFile.close();
         }
         
