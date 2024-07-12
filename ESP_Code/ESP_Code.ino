@@ -317,8 +317,8 @@ namespace {
         // wm.resetSettings(); 
         
         // Add custom parameters
-        WiFiManagerParameter duco_user("DUCO User", "DUCO User", DUCO_USER, 24);
-        WiFiManagerParameter miner_key("Miner Key", "Miner Key", MINER_KEY, 24);
+        WiFiManagerParameter duco_user("DUCO User", "DUCO User", DUCO_USER, 40);
+        WiFiManagerParameter miner_key("Miner Key", "Miner Key", MINER_KEY, 40);
         wm.addParameter(&duco_user);
         wm.addParameter(&miner_key);
         
