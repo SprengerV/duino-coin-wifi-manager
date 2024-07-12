@@ -78,10 +78,13 @@
 #endif
 
 namespace {
+    char DUCO_USER[24];
+    char MINER_KEY[24];
+
     MiningConfig *configuration = new MiningConfig(
-        DUCO_USER = undefined,
+        DUCO_USER,
         RIG_IDENTIFIER,
-        MINER_KEY = undefined
+        MINER_KEY
     );
 
     #if defined(ESP32) && CORE == 2
@@ -91,6 +94,13 @@ namespace {
     #ifdef USE_LAN
       static bool eth_connected = false;
     #endif
+
+    void saveConfigCallback () {
+      #if defined(SERIAL_PRINTING)
+        Serial.println("Should save config.")
+      #endif
+      shouldsave = true;
+    }
 
     void UpdateHostPort(String input) {
         // Thanks @ricaun for the code
@@ -116,43 +126,44 @@ namespace {
         if (http.begin(client, URL)) {
           int httpCode = http.GET();
 
-          if (httpCode == HTTP_CODE_OK)
+          if (httpCode == HTTP_CODE_OK) {
             payload = http.getString();
-          else
+          }
+          else {
             #if defined(SERIAL_PRINTING)
                Serial.printf("Error fetching node from poolpicker: %s\n", http.errorToString(httpCode).c_str());
             #endif
-
+          }
           http.end();
         }
         return payload;
     }
 
     void SelectNode() {
-        String input = "";
-        int waitTime = 1;
-        int poolIndex = 0;
+      String input = "";
+      int waitTime = 1;
+      int poolIndex = 0;
 
-        while (input == "") {
-            #if defined(SERIAL_PRINTING)
-              Serial.println("Fetching mining node from the poolpicker in " + String(waitTime) + "s");
-            #endif
-            input = httpGetString("https://server.duinocoin.com/getPool");
-            
-            delay(waitTime * 1000);
-            // Increase wait time till a maximum of 32 seconds
-            // (addresses: Limit connection requests on failure in ESP boards #1041)
-            waitTime *= 2;
-            if (waitTime > 32)
-                  waitTime = 32;
+      while (input == "") {
+        #if defined(SERIAL_PRINTING)
+          Serial.println("Fetching mining node from the poolpicker in " + String(waitTime) + "s");
+        #endif
+        input = httpGetString("https://server.duinocoin.com/getPool");
+        
+        delay(waitTime * 1000);
+        // Increase wait time till a maximum of 32 seconds
+        // (addresses: Limit connection requests on failure in ESP boards #1041)
+        waitTime *= 2;
+        if (waitTime > 32) {
+          waitTime = 32;
         }
-
-        UpdateHostPort(input);
       }
 
+      UpdateHostPort(input);
+    }
+
     #ifdef USE_LAN
-    void WiFiEvent(WiFiEvent_t event)
-    {
+    void WiFiEvent(WiFiEvent_t event) {
       switch (event) {
         case ARDUINO_EVENT_ETH_START:
           #if defined(SERIAL_PRINTING)
@@ -196,7 +207,7 @@ namespace {
       
       #ifdef USE_LAN
         #if defined(SERIAL_PRINTING)
-          Serial.println("Connecting to Ethernet...");
+          Serial.println("m,kkkkkkkkkkkkkkkkkkkkkkkkConnecting to Ethernet...");
         #endif
         WiFi.onEvent(WiFiEvent);  // Will call WiFiEvent() from another thread.
         ETH.begin();
@@ -220,7 +231,9 @@ namespace {
         #if defined(SERIAL_PRINTING)
           Serial.println("Connecting to WiFi...");
         #endif
+        
         WiFi.mode(WIFI_STA); // Setup ESP in client mode
+        
         #if defined(ESP8266)
             WiFi.setSleepMode(WIFI_NONE_SLEEP);
         #else
@@ -249,11 +262,14 @@ namespace {
               std::unique_ptr<char[]> buf(new char[sz]);
 
               cf.readBytes(buf.get(), sz);
-              DynamicJsonBuffer jBuff;
-              JsonObject& json - jBuff.parseObject(buf.get());
-              json.printTo(Serial);
-              if (json.success()) {
-                #if defined(SERIAL PRINTING)
+              DynamicJsonDocument jBuff(sz);
+              DeserializationError err = deserializeJson(jBuff, buf.get());
+              JsonObject json = jBuff.as<JsonObject>();
+              #if defined(SERIAL_PRINTING)
+                Serial.println(json);
+              #endif
+              if (!err) {
+                #if defined(SERIAL_PRINTING)
                   Serial.println("\nParsed JSON!");
                 #endif
                 strcpy(DUCO_USER, json["DUCO_USER"]);
@@ -266,13 +282,16 @@ namespace {
                   Serial.println("Failed to load JSON!");
                 #endif
               }
+              endif
             }
           }
         }
         else {
           #if defined(SERIAL_PRINTING)
-            Serial.println("Failed to mount file system!")
+            Serial.println("Failed to mount file system!");
+          #endif
         }
+      #endif
 
         WiFiManagerParameter duco_user("DUCO User", "DUCO User", DUCO_USER, 24);
         WiFiManagerParameter miner_key("Miner Key", "Miner Key", MINER_KEY, 24);
@@ -281,7 +300,7 @@ namespace {
         // Uncomment to wipe stored credentials for testing
         // wm.resetSettings(); 
         
-        wm.setSaveConfigCallBack(saveConfigCallback);
+        wm.setSaveConfigCallback(saveConfigCallback);
         // Set custom IP for web portal
         wm.setAPConfig(IPAddress(10,0,0,1), IPAddress(10,0,0,1), IPAddress(255,255,255,0));
         // Set a timeout for connection
@@ -300,8 +319,8 @@ namespace {
           #if defined(SERIAL_PRINTING)
             Serial.println("Saving config...");
           #endif
-          DynamicJsonBuffer jBuff;
-          JsonObject& json - jBuff.createObject();
+          DynamicJsonDocument jBuff;
+          JsonObject json = jBuff.createObject();
           json["DUCO_USER"] = duco_user;
           json["MINER_KEY"] = miner_key;
 
