@@ -104,7 +104,8 @@ namespace {
 
     void UpdateHostPort(String input) {
         // Uncomment for ArduinoJson 5
-        JsonObject doc = parseObject(input);
+        DynamicJsonBuffer jBuff;
+        JsonObject& doc = jBuff.parseObject(input);
         
         // Thanks @ricaun for the code
         // Uncomment for ArduinoJson 6
