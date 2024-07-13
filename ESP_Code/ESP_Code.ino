@@ -80,8 +80,8 @@
 char DUCO_USER[24];
 char MINER_KEY[24];
 bool shouldSave = false;
-WiFiManagerParameter *duco_user;
-WiFiManagerParameter *miner_key;
+WiFiManagerParameter *ducouser;
+WiFiManagerParameter *minerkey;
 
 namespace {
     MiningConfig *configuration = new MiningConfig(
@@ -323,10 +323,10 @@ namespace {
         wm.debugPlatformInfo();
 
         // Add custom parameters
-        duco_user = new WiFiManagerParameter("DUCO User", "DUCO User", DUCO_USER, 40);
-        miner_key = new WiFiManagerParameter("Miner Key", "Miner Key", MINER_KEY, 40);
-        wm.addParameter(duco_user);
-        wm.addParameter(miner_key);
+        ducouser = new WiFiManagerParameter("DUCO User", "DUCO User", DUCO_USER, 40);
+        minerkey = new WiFiManagerParameter("Miner Key", "Miner Key", MINER_KEY, 40);
+        wm.addParameter(ducouser);
+        wm.addParameter(minerkey);
         
         wm.setSaveConfigCallback(saveConfigCallback);
         // Set custom IP for web portal
@@ -337,8 +337,8 @@ namespace {
         bool res;
         res = wm.autoConnect(RIG_IDENTIFIER);
 
-        strcpy(DUCO_USER, duco_user->getValue());
-        strcpy(MINER_KEY, miner_key->getValue());
+        strcpy(DUCO_USER, ducouser->getValue());
+        strcpy(MINER_KEY, minerkey->getValue());
         configuration->DUCO_USER = DUCO_USER;
         configuration->MINER_KEY = MINER_KEY;
 
