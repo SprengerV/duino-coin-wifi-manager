@@ -28,16 +28,16 @@
 #include <ArduinoJson.h>
 
 #if defined(ESP8266)
-    #include <ESP8266WiFi.h>
-    #include <ESP8266mDNS.h>
-    #include <ESP8266HTTPClient.h>
-    #include <ESP8266WebServer.h>
+  #include <ESP8266WiFi.h>
+  #include <ESP8266mDNS.h>
+  #include <ESP8266HTTPClient.h>
+  #include <ESP8266WebServer.h>
 #else
-    #include <ESPmDNS.h>
-    #include <WiFiClientSecure.h>
-    #include <WiFi.h>
-    #include <HTTPClient.h>
-    #include <WebServer.h>
+  #include <ESPmDNS.h>
+  #include <WiFiClientSecure.h>
+  #include <WiFi.h>
+  #include <HTTPClient.h>
+  #include <WebServer.h>
 #endif
 
 #include <WiFiManager.h> // https://github.com/tzapu/WifiManager
@@ -63,18 +63,18 @@
 // Auto adjust physical core count
 // (ESP32-S2/C3 have 1 core, ESP32 has 2 cores, ESP8266 has 1 core)
 #if defined(ESP8266)
-    #define CORE 1
-    typedef ESP8266WebServer WebServer;
+  #define CORE 1
+  typedef ESP8266WebServer WebServer;
 #elif defined(CONFIG_FREERTOS_UNICORE)
-    #define CORE 1
+  #define CORE 1
 #else
-    #define CORE 2
-    // Install TridentTD_EasyFreeRTOS32 if you get an error
-    #include <TridentTD_EasyFreeRTOS32.h>
+  #define CORE 2
+  // Install TridentTD_EasyFreeRTOS32 if you get an error
+  #include <TridentTD_EasyFreeRTOS32.h>
 #endif
 
 #if defined(WEB_DASHBOARD)
-    WebServer server(80);
+  WebServer server(80);
 #endif
 
 char DUCO_USER[24];
@@ -84,93 +84,93 @@ WiFiManagerParameter *ducouser;
 WiFiManagerParameter *minerkey;
 
 namespace {
-    MiningConfig *configuration = new MiningConfig(
-        DUCO_USER,
-        RIG_IDENTIFIER,
-        MINER_KEY
-    );
+  MiningConfig *configuration = new MiningConfig(
+    DUCO_USER,
+    RIG_IDENTIFIER,
+    MINER_KEY
+  );
 
-    #if defined(ESP32) && CORE == 2
-      EasyMutex mutexClientData, mutexConnectToServer;
+  #if defined(ESP32) && CORE == 2
+    EasyMutex mutexClientData, mutexConnectToServer;
+  #endif
+
+  #ifdef USE_LAN
+    static bool eth_connected = false;
+  #endif
+
+  void saveConfigCallback () {
+    #if defined(SERIAL_PRINTING)
+      Serial.println("Should save config.")
     #endif
+    shouldsave = true;
+  }
 
-    #ifdef USE_LAN
-      static bool eth_connected = false;
+  void UpdateHostPort(String input) {
+    // Uncomment for ArduinoJson 5
+    DynamicJsonBuffer jBuff;
+    JsonObject& doc = jBuff.parseObject(input);
+    
+    // Thanks @ricaun for the code
+    // Uncomment for ArduinoJson 6
+    // DynamicJsonDocument doc(256);
+    // deserializeJson(doc, input);
+    const char *name = doc["name"];
+
+    configuration->host = doc["ip"].as<String>().c_str();
+    configuration->port = doc["port"].as<int>();
+    node_id = String(name);
+
+    #if defined(SERIAL_PRINTING)
+      Serial.println("Poolpicker selected the best mining node: " + node_id);
     #endif
+  }
 
-    void saveConfigCallback () {
-      #if defined(SERIAL_PRINTING)
-        Serial.println("Should save config.")
-      #endif
-      shouldsave = true;
-    }
+  String httpGetString(String URL) {
+    String payload = "";
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
 
-    void UpdateHostPort(String input) {
-        // Uncomment for ArduinoJson 5
-        DynamicJsonBuffer jBuff;
-        JsonObject& doc = jBuff.parseObject(input);
-        
-        // Thanks @ricaun for the code
-        // Uncomment for ArduinoJson 6
-        // DynamicJsonDocument doc(256);
-        // deserializeJson(doc, input);
-        const char *name = doc["name"];
+    if (http.begin(client, URL)) {
+      int httpCode = http.GET();
 
-        configuration->host = doc["ip"].as<String>().c_str();
-        configuration->port = doc["port"].as<int>();
-        node_id = String(name);
-
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Poolpicker selected the best mining node: " + node_id);
-        #endif
-    }
-
-    String httpGetString(String URL) {
-        String payload = "";
-        WiFiClientSecure client;
-        client.setInsecure();
-        HTTPClient http;
-
-        if (http.begin(client, URL)) {
-          int httpCode = http.GET();
-
-          if (httpCode == HTTP_CODE_OK) {
-            payload = http.getString();
-          }
-          else {
-            #if defined(SERIAL_PRINTING)
-               Serial.printf("Error fetching node from poolpicker: %s\n", http.errorToString(httpCode).c_str());
-            #endif
-          }
-          http.end();
-        }
-        return payload;
-    }
-
-    void SelectNode() {
-      String input = "";
-      int waitTime = 1;
-      int poolIndex = 0;
-
-      while (input == "") {
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Fetching mining node from the poolpicker in " + String(waitTime) + "s");
-        #endif
-        input = httpGetString("https://server.duinocoin.com/getPool");
-        
-        delay(waitTime * 1000);
-        // Increase wait time till a maximum of 32 seconds
-        // (addresses: Limit connection requests on failure in ESP boards #1041)
-        waitTime *= 2;
-        if (waitTime > 32) {
-          waitTime = 32;
-        }
+      if (httpCode == HTTP_CODE_OK) {
+        payload = http.getString();
       }
+      else {
+        #if defined(SERIAL_PRINTING)
+            Serial.printf("Error fetching node from poolpicker: %s\n", http.errorToString(httpCode).c_str());
+        #endif
+      }
+      http.end();
+    }
+    return payload;
+  }
 
-      UpdateHostPort(input);
+  void SelectNode() {
+    String input = "";
+    int waitTime = 1;
+    int poolIndex = 0;
+
+    while (input == "") {
+      #if defined(SERIAL_PRINTING)
+        Serial.println("Fetching mining node from the poolpicker in " + String(waitTime) + "s");
+      #endif
+      input = httpGetString("https://server.duinocoin.com/getPool");
+      
+      delay(waitTime * 1000);
+      // Increase wait time till a maximum of 32 seconds
+      // (addresses: Limit connection requests on failure in ESP boards #1041)
+      waitTime *= 2;
+      if (waitTime > 32) {
+        waitTime = 32;
+      }
     }
 
-    #ifdef USE_LAN
+    UpdateHostPort(input);
+  }
+
+  #ifdef USE_LAN
     void WiFiEvent(WiFiEvent_t event) {
       switch (event) {
         case ARDUINO_EVENT_ETH_START:
@@ -209,306 +209,310 @@ namespace {
           break;
       }
     }
-    #endif
+  #endif
 
-    void SetupWifi() {
+  void SetupWifi() {
+    
+    #ifdef USE_LAN
+      #if defined(SERIAL_PRINTING)
+        Serial.println("m,kkkkkkkkkkkkkkkkkkkkkkkkConnecting to Ethernet...");
+      #endif
+      WiFi.onEvent(WiFiEvent);  // Will call WiFiEvent() from another thread.
+      ETH.begin();
       
-      #ifdef USE_LAN
-        #if defined(SERIAL_PRINTING)
-          Serial.println("m,kkkkkkkkkkkkkkkkkkkkkkkkConnecting to Ethernet...");
-        #endif
-        WiFi.onEvent(WiFiEvent);  // Will call WiFiEvent() from another thread.
-        ETH.begin();
-        
 
-        while (!eth_connected) {
-            delay(500);
-            #if defined(SERIAL_PRINTING)
-                Serial.print(".");
-            #endif
-        }
-
-        #if defined(SERIAL_PRINTING)
-          Serial.println("\n\nSuccessfully connected to Ethernet");
-          Serial.println("Local IP address: " + ETH.localIP().toString());
-          Serial.println("Rig name: " + String(RIG_IDENTIFIER));
-          Serial.println();
-        #endif
-      #else
-        
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Connecting to WiFi...");
-        #endif
-        
-        WiFi.mode(WIFI_STA); // Setup ESP in client mode
-        
-        #if defined(ESP8266)
-            WiFi.setSleepMode(WIFI_NONE_SLEEP);
-        #else
-            WiFi.setSleep(false);
-        #endif
-
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Mounting file system...");
-        #endif
-
-        if (SPIFFS.begin()) {
+      while (!eth_connected) {
+          delay(500);
           #if defined(SERIAL_PRINTING)
-            Serial.println("File system mounted!");
-          #endif
-          if (SPIFFS.exists("/config.json")) {
-            #if defined(SERIAL_PRINTING)
-              Serial.println("Reading config file...");
-            #endif
-            File cf = SPIFFS.open("/config.json", "r");
-            if (cf) {
-              #if defined(SERIAL_PRINTING)
-                Serial.println("Opened config file!");
-              #endif
-              size_t sz = cf.size();
-              // Allocate a buffer to store contents of config.json
-              std::unique_ptr<char[]> buf(new char[sz]);
-
-              cf.readBytes(buf.get(), sz);
-              
-              // Uncomment for ArduinoJson 5
-              DynamicJsonBuffer jBuff;
-              JsonObject& json = jBuff.parseObject(buf.get());
-
-              // Uncomment for ArduinoJson 6
-              // DynamicJsonDocument jBuff(sz);
-              // DeserializationError err = deserializeJson(jBuff, buf.get());
-              // JsonObject json = jBuff.as<JsonObject>();
-
-              #if defined(SERIAL_PRINTING)
-                // Uncomment for ArduinoJson 5
-                json.printTo(Serial);
-                // Uncomment for ArduinoJson 6
-                // Serial.println(json);
-              #endif
-
-              // Uncomment for ArduinoJson 5
-              if (json.success()) {
-              // Uncomment for ArduinoJson 6
-              // if (!err) {
-                #if defined(SERIAL_PRINTING)
-                  Serial.println("\nParsed JSON!");
-                #endif
-                strcpy(DUCO_USER, json["DUCO_USER"]);
-                configuration->DUCO_USER = DUCO_USER;
-                strcpy(MINER_KEY, json["MINER_KEY"]);
-                configuration->MINER_KEY = MINER_KEY;
-              }
-              else {
-                #if defined(SERIAL_PRINTING)
-                  Serial.println("Failed to load JSON!");
-                #endif
-              }
-            }
-          }
-        }
-        else {
-          #if defined(SERIAL_PRINTING)
-            Serial.println("Failed to mount file system!");
-          #endif
-        }
-      #endif
-        // WiFiManager local initialization
-        WiFiManager wm; 
-        // Uncomment to wipe stored credentials for testing
-        // wm.resetSettings(); 
-        
-        // Uncomment for debugging
-        wm.setDebugOutput(true);
-        wm.debugPlatformInfo();
-
-        // Add custom parameters
-        ducouser = new WiFiManagerParameter("User", "DUCO User", DUCO_USER, 40);
-        minerkey = new WiFiManagerParameter("Key", "Miner Key", MINER_KEY, 40);
-        wm.addParameter(ducouser);
-        wm.addParameter(minerkey);
-        
-        wm.setSaveConfigCallback(saveConfigCallback);
-        // Set custom IP for web portal
-        wm.setAPStaticIPConfig(IPAddress(10,0,0,1), IPAddress(10,0,0,1), IPAddress(255,255,255,0));
-        // Set a timeout for connection
-        wm.setTimeout(120);
-
-        bool res;
-        res = wm.autoConnect(RIG_IDENTIFIER);
-
-        strcpy(DUCO_USER, ducouser->getValue());
-        strcpy(MINER_KEY, minerkey->getValue());
-        configuration->DUCO_USER = DUCO_USER;
-        configuration->MINER_KEY = MINER_KEY;
-
-        if (shouldSave) {
-          #if defined(SERIAL_PRINTING)
-            Serial.println("Saving config...");
-          #endif
-          
-          // Uncomment for ArduinoJson 5
-          DynamicJsonBuffer jBuff;
-          JsonObject& json = jBuff.createObject();
-
-          // Uncomment for ArduinoJson 6 
-          // JsonObject json;
-
-          json["DUCO_USER"] = DUCO_USER;
-          json["MINER_KEY"] = MINER_KEY;
-
-
-          #if defined(SERIAL_PRINTING)
-            // Uncomment for ArduinoJson 5
-            json.printTo(Serial);
-
-            // Uncomment for ArduinoJson 6
-            // serializeJson(json, Serial);
-          #endif
-
-          File configFile = SPIFFS.open("/config.json", "w");
-          if (!configFile) {
-            #if defined(SERIAL_PRINTING)
-              Serial.println("Failed to open config file for writing");
-            #endif
-          }
-
-          #if defined(SERIAL_PRINTING)
-            // Uncomment for ArduinoJson 5
-            json.printTo(Serial);
-            
-            // Uncomment for ArduinoJson 6
-            // Serial.println(json);
-          #endif
-          
-          // uncomment for ArduinoJson 5
-          json.printTo(configFile);
-
-          // Uncomment for ArduinoJson 6
-          // serializeJson(json, configFile)
-          
-          configFile.close();
-        }
-        
-        if (!res) {
-          #if defined(SERIAL_PRINTING)
-            Serial.println("Failed to connect");
-          #endif  
-          ESP.restart();
-        }
-        else {
-          // If you're here you've connected to the WiFi
-          #if defined(SERIAL_PRINTING)
-            Serial.println("\n\nSuccessfully connected to WiFi");
-            Serial.println("Local IP address: " + WiFi.localIP().toString());
-            Serial.println("Rig name: " + String(RIG_IDENTIFIER));
-            Serial.println();
-          #endif
-        }
-
-        int wait_passes = 0;
-        while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-            delay(500);
-            #if defined(SERIAL_PRINTING)
               Serial.print(".");
-            #endif
-            if (++wait_passes >= 10) {
-                //WiFi.begin(SSID, PASSWORD);
-                ESP.restart();
-                wait_passes = 0;
-            }
-        }
-
-        SelectNode();
-    }
-
-    void SetupOTA() {
-        // Prepare OTA handler
-        ArduinoOTA.onStart([]()
-                           { 
-                             #if defined(SERIAL_PRINTING)
-                               Serial.println("Start"); 
-                             #endif
-                           });
-        ArduinoOTA.onEnd([]()
-                         { 
-                            #if defined(SERIAL_PRINTING)
-                              Serial.println("\nEnd"); 
-                            #endif
-                         });
-        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
-                              { 
-                                 #if defined(SERIAL_PRINTING)
-                                   Serial.printf("Progress: %u%%\r", (progress / (total / 100))); 
-                                 #endif
-                              });
-        ArduinoOTA.onError([](ota_error_t error)
-                           {
-                                Serial.printf("Error[%u]: ", error);
-                                #if defined(SERIAL_PRINTING)
-                                  if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-                                  else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-                                  else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-                                  else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-                                  else if (error == OTA_END_ERROR) Serial.println("End Failed");
-                                #endif
-                          });
-
-        ArduinoOTA.setHostname(RIG_IDENTIFIER); // Give port a name
-        ArduinoOTA.begin();
-    }
-
-    void VerifyWifi() {
-      #ifdef USE_LAN
-        while ((!eth_connected) || (ETH.localIP() == IPAddress(0, 0, 0, 0))) {
-          #if defined(SERIAL_PRINTING)
-            Serial.println("Ethernet connection lost. Reconnect..." );
           #endif
-          SetupWifi();
-        }
+      }
+
+      #if defined(SERIAL_PRINTING)
+        Serial.println("\n\nSuccessfully connected to Ethernet");
+        Serial.println("Local IP address: " + ETH.localIP().toString());
+        Serial.println("Rig name: " + String(RIG_IDENTIFIER));
+        Serial.println();
+      #endif
+    #else      
+      #if defined(SERIAL_PRINTING)
+        Serial.println("Connecting to WiFi...");
+      #endif
+      
+      WiFi.mode(WIFI_STA); // Setup ESP in client mode
+      
+      #if defined(ESP8266)
+          WiFi.setSleepMode(WIFI_NONE_SLEEP);
       #else
-        while (WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0, 0, 0, 0))
-            WiFi.reconnect();
+          WiFi.setSleep(false);
+      #endif
+
+      #if defined(SERIAL_PRINTING)
+        Serial.println("Mounting file system...");
+      #endif
+
+      if (SPIFFS.begin()) {
+        #if defined(SERIAL_PRINTING)
+          Serial.println("File system mounted!");
+        #endif
+        if (SPIFFS.exists("/config.json")) {
+          #if defined(SERIAL_PRINTING)
+            Serial.println("Reading config file...");
+          #endif
+          File cf = SPIFFS.open("/config.json", "r");
+          if (cf) {
+            #if defined(SERIAL_PRINTING)
+              Serial.println("Opened config file!");
+            #endif
+
+            size_t sz = cf.size();
+            // Allocate a buffer to store contents of config.json
+            std::unique_ptr<char[]> buf(new char[sz]);
+
+            cf.readBytes(buf.get(), sz);
+            
+            // Uncomment for ArduinoJson 5
+            DynamicJsonBuffer jBuff;
+            JsonObject& json = jBuff.parseObject(buf.get());
+
+            // Uncomment for ArduinoJson 6
+            // DynamicJsonDocument jBuff(sz);
+            // DeserializationError err = deserializeJson(jBuff, buf.get());
+            // JsonObject json = jBuff.as<JsonObject>();
+
+            #if defined(SERIAL_PRINTING)
+              // Uncomment for ArduinoJson 5
+              json.printTo(Serial);
+              // Uncomment for ArduinoJson 6
+              // Serial.println(json);
+            #endif
+
+            // Uncomment for ArduinoJson 5
+            if (json.success()) {
+            // Uncomment for ArduinoJson 6
+            // if (!err) {
+              #if defined(SERIAL_PRINTING)
+                Serial.println("\nParsed JSON!");
+              #endif
+              strcpy(DUCO_USER, json["DUCO_USER"]);
+              configuration->DUCO_USER = DUCO_USER;
+              strcpy(MINER_KEY, json["MINER_KEY"]);
+              configuration->MINER_KEY = MINER_KEY;
+            }
+            else {
+              #if defined(SERIAL_PRINTING)
+                Serial.println("Failed to load JSON!");
+              #endif
+            }
+          }
+        }
+      }
+      else {
+        #if defined(SERIAL_PRINTING)
+          Serial.println("Failed to mount file system!");
+        #endif
+      }
+    #endif
+
+    // WiFiManager local initialization
+    WiFiManager wm; 
+
+    // Uncomment to wipe stored credentials for testing
+    // wm.resetSettings(); 
+    
+    // Uncomment for debugging
+    // wm.setDebugOutput(true);
+    // wm.debugPlatformInfo();
+
+    // Add custom parameters
+    ducouser = new WiFiManagerParameter("User", "DUCO User", DUCO_USER, 40);
+    minerkey = new WiFiManagerParameter("Key", "Miner Key", MINER_KEY, 40);
+    wm.addParameter(ducouser);
+    wm.addParameter(minerkey);
+    
+    wm.setSaveConfigCallback(saveConfigCallback);
+    // Set custom IP for web portal
+    wm.setAPStaticIPConfig(IPAddress(10,0,0,1), IPAddress(10,0,0,1), IPAddress(255,255,255,0));
+    // Set a timeout for connection
+    wm.setTimeout(120);
+
+    bool res;
+    res = wm.autoConnect(RIG_IDENTIFIER);
+
+    strcpy(DUCO_USER, ducouser->getValue());
+    strcpy(MINER_KEY, minerkey->getValue());
+    configuration->DUCO_USER = DUCO_USER;
+    configuration->MINER_KEY = MINER_KEY;
+
+    if (shouldSave) {
+      #if defined(SERIAL_PRINTING)
+        Serial.println("Saving config...");
+      #endif
+      
+      // Uncomment for ArduinoJson 5
+      DynamicJsonBuffer jBuff;
+      JsonObject& json = jBuff.createObject();
+
+      // Uncomment for ArduinoJson 6 
+      // JsonObject json;
+
+      json["DUCO_USER"] = DUCO_USER;
+      json["MINER_KEY"] = MINER_KEY;
+
+
+      #if defined(SERIAL_PRINTING)
+        // Uncomment for ArduinoJson 5
+        json.printTo(Serial);
+
+        // Uncomment for ArduinoJson 6
+        // serializeJson(json, Serial);
+      #endif
+
+      File configFile = SPIFFS.open("/config.json", "w");
+      if (!configFile) {
+        #if defined(SERIAL_PRINTING)
+          Serial.println("Failed to open config file for writing");
+        #endif
+      }
+
+      #if defined(SERIAL_PRINTING)
+        // Uncomment for ArduinoJson 5
+        json.printTo(Serial);
+        
+        // Uncomment for ArduinoJson 6
+        // Serial.println(json);
+      #endif
+      
+      // uncomment for ArduinoJson 5
+      json.printTo(configFile);
+
+      // Uncomment for ArduinoJson 6
+      // serializeJson(json, configFile)
+      
+      configFile.close();
+    }
+    
+    if (!res) {
+      #if defined(SERIAL_PRINTING)
+        Serial.println("Failed to connect");
+      #endif  
+      ESP.restart();
+    }
+    else {
+      // If you're here you've connected to the WiFi
+      #if defined(SERIAL_PRINTING)
+        Serial.println("\n\nSuccessfully connected to WiFi");
+        Serial.println("Local IP address: " + WiFi.localIP().toString());
+        Serial.println("Rig name: " + String(RIG_IDENTIFIER));
+        Serial.println();
       #endif
     }
 
-    void handleSystemEvents(void) {
-        VerifyWifi();
-        ArduinoOTA.handle();
-        yield();
+    int wait_passes = 0;
+    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+      delay(500);
+
+      #if defined(SERIAL_PRINTING)
+        Serial.print(".");
+      #endif
+
+      if (++wait_passes >= 10) {
+        //WiFi.begin(SSID, PASSWORD);
+        ESP.restart();
+        wait_passes = 0;
+      }
     }
 
-    #if defined(WEB_DASHBOARD)
-        void dashboard() {
-             #if defined(SERIAL_PRINTING)
-               Serial.println("Handling HTTP client");
-             #endif
-             String s = WEBSITE;
-             #ifdef USE_LAN
-              s.replace("@@IP_ADDR@@", ETH.localIP().toString());
-             #else
-              s.replace("@@IP_ADDR@@", WiFi.localIP().toString());
-             #endif
-  
-             s.replace("@@HASHRATE@@", String(hashrate / 1000));
-             s.replace("@@DIFF@@", String(difficulty / 100));
-             s.replace("@@SHARES@@", String(share_count));
-             s.replace("@@NODE@@", String(node_id));
-             
-             #if defined(ESP8266)
-                 s.replace("@@DEVICE@@", "ESP8266");
-             #elif defined(CONFIG_FREERTOS_UNICORE)
-                 s.replace("@@DEVICE@@", "ESP32-S2/C3");
-             #else
-                 s.replace("@@DEVICE@@", "ESP32");
-             #endif
-             
-             s.replace("@@ID@@", String(RIG_IDENTIFIER));
-             s.replace("@@MEMORY@@", String(ESP.getFreeHeap()));
-             s.replace("@@VERSION@@", String(SOFTWARE_VERSION));
-             server.send(200, "text/html", s);
-        }
+    SelectNode();
+  }
+
+  void SetupOTA() {
+    // Prepare OTA handler
+    ArduinoOTA.onStart([]()
+      { 
+        #if defined(SERIAL_PRINTING)
+          Serial.println("Start"); 
+        #endif
+      });
+    ArduinoOTA.onEnd([]()
+      { 
+        #if defined(SERIAL_PRINTING)
+          Serial.println("\nEnd"); 
+        #endif
+      });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+      { 
+        #if defined(SERIAL_PRINTING)
+          Serial.printf("Progress: %u%%\r", (progress / (total / 100))); 
+        #endif
+      });
+    ArduinoOTA.onError([](ota_error_t error)
+      {
+        Serial.printf("Error[%u]: ", error);
+        #if defined(SERIAL_PRINTING)
+          if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+          else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+          else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+          else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+          else if (error == OTA_END_ERROR) Serial.println("End Failed");
+        #endif
+      });
+
+    ArduinoOTA.setHostname(RIG_IDENTIFIER); // Give port a name
+    ArduinoOTA.begin();
+  }
+
+  void VerifyWifi() {
+    #ifdef USE_LAN
+      while ((!eth_connected) || (ETH.localIP() == IPAddress(0, 0, 0, 0))) {
+        #if defined(SERIAL_PRINTING)
+          Serial.println("Ethernet connection lost. Reconnect..." );
+        #endif
+        SetupWifi();
+      }
+    #else
+      while (WiFi.status() != WL_CONNECTED || WiFi.localIP() == IPAddress(0, 0, 0, 0))
+        WiFi.reconnect();
     #endif
+  }
+
+  void handleSystemEvents(void) {
+    VerifyWifi();
+    ArduinoOTA.handle();
+    yield();
+  }
+
+  #if defined(WEB_DASHBOARD)
+    void dashboard() {
+      #if defined(SERIAL_PRINTING)
+        Serial.println("Handling HTTP client");
+      #endif
+      String s = WEBSITE;
+      #ifdef USE_LAN
+      s.replace("@@IP_ADDR@@", ETH.localIP().toString());
+      #else
+      s.replace("@@IP_ADDR@@", WiFi.localIP().toString());
+      #endif
+
+      s.replace("@@HASHRATE@@", String(hashrate / 1000));
+      s.replace("@@DIFF@@", String(difficulty / 100));
+      s.replace("@@SHARES@@", String(share_count));
+      s.replace("@@NODE@@", String(node_id));
+      
+      #if defined(ESP8266)
+        s.replace("@@DEVICE@@", "ESP8266");
+      #elif defined(CONFIG_FREERTOS_UNICORE)
+        s.replace("@@DEVICE@@", "ESP32-S2/C3");
+      #else
+        s.replace("@@DEVICE@@", "ESP32");
+      #endif
+      
+      s.replace("@@ID@@", String(RIG_IDENTIFIER));
+      s.replace("@@MEMORY@@", String(ESP.getFreeHeap()));
+      s.replace("@@VERSION@@", String(SOFTWARE_VERSION));
+      server.send(200, "text/html", s);
+    }
+  #endif
 
 } // End of namespace
 
@@ -519,129 +523,129 @@ MiningJob *job[CORE];
 #endif
 
 void task1_func(void *) {
-    #if defined(ESP32) && CORE == 2
-      VOID SETUP() { }
+  #if defined(ESP32) && CORE == 2
+    VOID SETUP() { }
 
-      VOID LOOP() {
-        job[0]->mine();
-      }
-    #endif
+    VOID LOOP() {
+      job[0]->mine();
+    }
+  #endif
 }
 
 void task2_func(void *) {
-    #if defined(ESP32) && CORE == 2
-      VOID SETUP() {
-        job[1] = new MiningJob(1, configuration);
-      }
+  #if defined(ESP32) && CORE == 2
+    VOID SETUP() {
+      job[1] = new MiningJob(1, configuration);
+    }
 
-      VOID LOOP() {
-        job[1]->mine();
-      }
-    #endif
+    VOID LOOP() {
+      job[1]->mine();
+    }
+  #endif
 }
 
 void setup() {    
-    delay(500);
-    
+  delay(500);
+  
+  #if defined(SERIAL_PRINTING)
+    Serial.begin(500000);
+    Serial.println("\n\nDuino-Coin " + String(configuration->MINER_VER));
+  #endif
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  assert(CORE == 1 || CORE == 2);
+  WALLET_ID = String(random(0, 2811)); // Needed for miner grouping in the wallet
+  job[0] = new MiningJob(0, configuration);
+
+  #if defined(USE_DHT)
     #if defined(SERIAL_PRINTING)
-      Serial.begin(500000);
-      Serial.println("\n\nDuino-Coin " + String(configuration->MINER_VER));
+      Serial.println("Initializing DHT sensor (Duino IoT)");
     #endif
-    pinMode(LED_BUILTIN, OUTPUT);
-
-    assert(CORE == 1 || CORE == 2);
-    WALLET_ID = String(random(0, 2811)); // Needed for miner grouping in the wallet
-    job[0] = new MiningJob(0, configuration);
-
-    #if defined(USE_DHT)
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Initializing DHT sensor (Duino IoT)");
-        #endif
-        dht.begin();
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Test reading: " + String(dht.readHumidity()) + "% humidity");
-          Serial.println("Test reading: temperature " + String(dht.readTemperature()) + "°C");
-        #endif
+    dht.begin();
+    #if defined(SERIAL_PRINTING)
+      Serial.println("Test reading: " + String(dht.readHumidity()) + "% humidity");
+      Serial.println("Test reading: temperature " + String(dht.readTemperature()) + "°C");
     #endif
+  #endif
 
-    #if defined(USE_DS18B20)
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Initializing DS18B20 sensor (Duino IoT)");
-        #endif
-        sensors.begin();
-        sensors.requestTemperatures(); 
-        #if defined(SERIAL_PRINTING)
-          Serial.println("Test reading: " + String(sensors.getTempCByIndex(0)) + "°C");
-        #endif
+  #if defined(USE_DS18B20)
+    #if defined(SERIAL_PRINTING)
+      Serial.println("Initializing DS18B20 sensor (Duino IoT)");
     #endif
-
-    #if defined(USE_INTERNAL_SENSOR)
-       #if defined(SERIAL_PRINTING)
-         Serial.println("Initializing internal ESP32 temperature sensor (Duino IoT)");
-       #endif
-       temp_sensor_config_t temp_sensor = TSENS_CONFIG_DEFAULT();
-       temp_sensor.dac_offset = TSENS_DAC_L2;
-       temp_sensor_set_config(temp_sensor);
-       temp_sensor_start();
-       float result = 0;
-       temp_sensor_read_celsius(&result);
-       #if defined(SERIAL_PRINTING)
-         Serial.println("Test reading: " + String(result) + "°C");
-       #endif
+    sensors.begin();
+    sensors.requestTemperatures(); 
+    #if defined(SERIAL_PRINTING)
+      Serial.println("Test reading: " + String(sensors.getTempCByIndex(0)) + "°C");
     #endif
+  #endif
 
-    SetupWifi();
-    SetupOTA();
+  #if defined(USE_INTERNAL_SENSOR)
+    #if defined(SERIAL_PRINTING)
+      Serial.println("Initializing internal ESP32 temperature sensor (Duino IoT)");
+    #endif
+    temp_sensor_config_t temp_sensor = TSENS_CONFIG_DEFAULT();
+    temp_sensor.dac_offset = TSENS_DAC_L2;
+    temp_sensor_set_config(temp_sensor);
+    temp_sensor_start();
+    float result = 0;
+    temp_sensor_read_celsius(&result);
+    #if defined(SERIAL_PRINTING)
+      Serial.println("Test reading: " + String(result) + "°C");
+    #endif
+  #endif
 
-    #if defined(WEB_DASHBOARD)
-      if (!MDNS.begin(RIG_IDENTIFIER)) {
-        #if defined(SERIAL_PRINTING)
-          Serial.println("mDNS unavailable");
-        #endif
-      }
-      MDNS.addService("http", "tcp", 80);
+  SetupWifi();
+  SetupOTA();
+
+  #if defined(WEB_DASHBOARD)
+    if (!MDNS.begin(RIG_IDENTIFIER)) {
       #if defined(SERIAL_PRINTING)
-        #ifdef USE_LAN
-          Serial.println("Configured mDNS for dashboard on http://" + String(RIG_IDENTIFIER) 
-                     + ".local (or http://" + ETH.localIP().toString() + ")");
-        #else
-          Serial.println("Configured mDNS for dashboard on http://" + String(RIG_IDENTIFIER) 
-                     + ".local (or http://" + WiFi.localIP().toString() + ")");
-        #endif
+        Serial.println("mDNS unavailable");
       #endif
-
-      server.on("/", dashboard);
-      server.begin();
+    }
+    MDNS.addService("http", "tcp", 80);
+    #if defined(SERIAL_PRINTING)
+      #ifdef USE_LAN
+        Serial.println("Configured mDNS for dashboard on http://" + String(RIG_IDENTIFIER) 
+                    + ".local (or http://" + ETH.localIP().toString() + ")");
+      #else
+        Serial.println("Configured mDNS for dashboard on http://" + String(RIG_IDENTIFIER) 
+                    + ".local (or http://" + WiFi.localIP().toString() + ")");
+      #endif
     #endif
 
-    job[0]->blink(BLINK_SETUP_COMPLETE);
+    server.on("/", dashboard);
+    server.begin();
+  #endif
 
-    #if CORE == 2 && defined(ESP32)
-        task1.start(task1_func);
-        task2.start(task2_func);
-    #endif
+  job[0]->blink(BLINK_SETUP_COMPLETE);
+
+  #if CORE == 2 && defined(ESP32)
+    task1.start(task1_func);
+    task2.start(task2_func);
+  #endif
 }
 
 void loopOneCore() {
-    job[0]->mine();
+  job[0]->mine();
 
-    #if defined(ESP8266)
-        // Fastest clock mode for 8266s
-        system_update_cpu_freq(160);
-    #else
-        // Fastest clock mode for 32s
-        setCpuFrequencyMhz(240);
-    #endif
-    
-    VerifyWifi();
-    ArduinoOTA.handle();
-    #if defined(WEB_DASHBOARD) 
-        server.handleClient();
-    #endif
+  #if defined(ESP8266)
+    // Fastest clock mode for 8266s
+    system_update_cpu_freq(160);
+  #else
+    // Fastest clock mode for 32s
+    setCpuFrequencyMhz(240);
+  #endif
+  
+  VerifyWifi();
+  ArduinoOTA.handle();
+  #if defined(WEB_DASHBOARD) 
+    server.handleClient();
+  #endif
 }
 
 void loop() {
-    #if CORE == 1
-        loopOneCore();
-    #endif
+  #if CORE == 1
+    loopOneCore();
+  #endif
 }
