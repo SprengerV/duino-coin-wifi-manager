@@ -102,7 +102,7 @@ namespace {
     #if defined(SERIAL_PRINTING)
       Serial.println("Should save config.");
     #endif
-    shouldsave = true;
+    shouldSave = true;
   }
 
   void UpdateHostPort(String input) {
