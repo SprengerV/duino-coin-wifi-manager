@@ -323,8 +323,8 @@ namespace {
         wm.debugPlatformInfo();
 
         // Add custom parameters
-        ducouser = new WiFiManagerParameter("DUCO User", "DUCO User", DUCO_USER, 40);
-        minerkey = new WiFiManagerParameter("Miner Key", "Miner Key", MINER_KEY, 40);
+        ducouser = new WiFiManagerParameter("User", "DUCO User", DUCO_USER, 40);
+        minerkey = new WiFiManagerParameter("Key", "Miner Key", MINER_KEY, 40);
         wm.addParameter(ducouser);
         wm.addParameter(minerkey);
         
