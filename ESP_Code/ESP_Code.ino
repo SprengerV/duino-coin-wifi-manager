@@ -326,7 +326,7 @@ namespace {
 
     // Add custom parameters
     ducouser = new WiFiManagerParameter("User", "DUCO User", DUCO_USER, 40);
-    minerkey = new WiFiManagerParameter("Key", "Miner Key", MINER_KEY, 40);
+    minerkey = new WiFiManagerParameter("Key", "Miner Key", MINER_KEY, 40, "type=\"password\"");
     wm.addParameter(ducouser);
     wm.addParameter(minerkey);
     

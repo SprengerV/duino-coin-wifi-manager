@@ -7,7 +7,7 @@
 extern const char RIG_IDENTIFIER[] = "ESP_00"; // Increment by 1 for each ESP
 
 // Uncomment if you want to host the dashboard page (available on ESPs IP address)
-#define WEB_DASHBOARD
+// #define WEB_DASHBOARD
 
 // Uncomment if you want to use LAN8720. WLAN-credentials will be ignored using LAN
 // Select correct Board in ArduinoIDE!!! Really!
