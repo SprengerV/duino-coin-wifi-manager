@@ -318,6 +318,10 @@ namespace {
         // Uncomment to wipe stored credentials for testing
         // wm.resetSettings(); 
         
+        // Uncomment for debugging
+        wm.setDebugOutput(true);
+        wm.debugPlatformInfo();
+
         // Add custom parameters
         duco_user = new WiFiManagerParameter("DUCO User", "DUCO User", DUCO_USER, 40);
         miner_key = new WiFiManagerParameter("Miner Key", "Miner Key", MINER_KEY, 40);
