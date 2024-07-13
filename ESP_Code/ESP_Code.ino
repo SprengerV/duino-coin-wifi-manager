@@ -80,6 +80,8 @@
 char DUCO_USER[24];
 char MINER_KEY[24];
 bool shouldSave = false;
+WiFiManagerParameter *duco_user;
+WiFiManagerParameter *miner_key;
 
 namespace {
     MiningConfig *configuration = new MiningConfig(
@@ -317,8 +319,8 @@ namespace {
         // wm.resetSettings(); 
         
         // Add custom parameters
-        WiFiManagerParameter duco_user("DUCO User", "DUCO User", DUCO_USER, 40);
-        WiFiManagerParameter miner_key("Miner Key", "Miner Key", MINER_KEY, 40);
+        duco_user = new WiFiManagerParameter("DUCO User", "DUCO User", DUCO_USER, 40);
+        miner_key = new WiFiManagerParameter("Miner Key", "Miner Key", MINER_KEY, 40);
         wm.addParameter(&duco_user);
         wm.addParameter(&miner_key);
         
@@ -335,7 +337,7 @@ namespace {
         strcpy(MINER_KEY, miner_key.getValue());
         configuration->DUCO_USER = DUCO_USER;
         configuration->MINER_KEY = MINER_KEY;
-        
+
         if (shouldSave) {
           #if defined(SERIAL_PRINTING)
             Serial.println("Saving config...");
