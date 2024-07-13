@@ -100,7 +100,7 @@ namespace {
 
   void saveConfigCallback () {
     #if defined(SERIAL_PRINTING)
-      Serial.println("Should save config.")
+      Serial.println("Should save config.");
     #endif
     shouldsave = true;
   }
