@@ -341,12 +341,12 @@ void SetupWifi() {
   // wm.debugPlatformInfo();
 
   // Add custom parameters
-  ducouser = new WiFiManagerParameter("User", "DUCO User", "username", 40);
-  minerkey = new WiFiManagerParameter("Key", "Miner Key", "mining key", 40, "type=\"password\"");
-  ip = new WiFiManagerParameter("IP", "Device IP", "10.0.0.100", 15);
-  gw = new WiFiManagerParameter("Gateway", "Network Gateway", "10.0.0.1", 15);
-  nm = new WiFiManagerParameter("Netmask", "Netmask", "255.255.255.0", 15);
-  dns = new WiFiManagerParameter("DNS", "DNS", "1.1.1.1", 15);
+  ducouser = new WiFiManagerParameter("User", "DUCO User", DUCO_USER, 40);
+  minerkey = new WiFiManagerParameter("Key", "Miner Key", MINER_KEY, 40, "type=\"password\"");
+  ip = new WiFiManagerParameter("IP", "Device IP", DEVICE_IP, 15);
+  gw = new WiFiManagerParameter("Gateway", "Network Gateway", GATEWAY, 15);
+  nm = new WiFiManagerParameter("Netmask", "Netmask", NETMASK, 15);
+  dns = new WiFiManagerParameter("DNS", "DNS", DNS, 15);
   
   wm.addParameter(ducouser);
   wm.addParameter(minerkey);
