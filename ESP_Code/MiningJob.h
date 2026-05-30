@@ -37,6 +37,11 @@ struct MiningConfig {
     String RIG_IDENTIFIER = "";
     String MINER_KEY = "";
     String MINER_VER = SOFTWARE_VERSION;
+    String DEVICE_IP = "";
+    String GATEWAY = "";
+    String NETMASK = "";
+    String DNS = "";
+
     #if defined(ESP8266)
         // "High-band" 8266 diff
         String START_DIFF = "ESP8266H";
@@ -48,8 +53,8 @@ struct MiningConfig {
         String START_DIFF = "ESP32";
     #endif
 
-    MiningConfig(String DUCO_USER, String RIG_IDENTIFIER, String MINER_KEY)
-            : DUCO_USER(DUCO_USER), RIG_IDENTIFIER(RIG_IDENTIFIER), MINER_KEY(MINER_KEY) {}
+    MiningConfig(String DUCO_USER, String RIG_IDENTIFIER, String MINER_KEY, String DEVICE_IP, String GATEWAY, String NETMASK, String DNS)
+            : DUCO_USER(DUCO_USER), RIG_IDENTIFIER(RIG_IDENTIFIER), MINER_KEY(MINER_KEY), DEVICE_IP(DEVICE_IP), GATEWAY(GATEWAY), NETMASK(NETMASK), DNS(DNS) {}
 };
 
 class MiningJob {
